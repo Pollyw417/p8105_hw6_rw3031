@@ -1,0 +1,30 @@
+---
+title: "p8105_hw6_rw3031"
+author: "Polly Wu (rw3031)"
+date: "2024-11-20"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(patchwork)
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+  fig.width = 8,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
