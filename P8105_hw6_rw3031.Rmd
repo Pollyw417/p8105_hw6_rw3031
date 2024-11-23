@@ -10,6 +10,7 @@ library(tidyverse)
 library(patchwork)
 library(ggplot2)
 library(httr)
+library(modelr)
 
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -211,17 +212,7 @@ summary(birthweight)
 ```
 ## build my regression model for birthweight
 
-My assumption is that child birthweight is going to be associated with gestational age in weeks, and covariates for the model involve mother's age at delivery, mother's race, family monthly income, average number of cigarettes smoked per day during pregnancy. 
-
-```{r}
-fit_bw = lm(bwt ~ gaweeks+momage+mrace+fincome+smoken, data=birthweight)
-
-fit_bw|>
-  broom::tidy()|>
-  knitr::kable(digits = 4)
-```
-
-Based on the model output, mother's age at develiry and family income has a p-value greater than 0.05 thus are not signficant covariates. I removed those two variables and refit the model. 
+My assumption is that child birthweight is going to be associated with gestational age in weeks, mother's race, and average number of cigarettes smoked per day during pregnancy. 
 
 ```{r}
 fit_bw = lm(bwt ~ gaweeks+mrace+smoken, data=birthweight)
@@ -266,3 +257,40 @@ fit_headlengthsex|>
   knitr::kable(digits = 4)
 ```
 
+## cross validation
+
+```{r}
+cv_df =
+  crossv_mc(birthweight, 100)
+```
+
+
+```{r}
+cv_df =
+cv_df|>
+  mutate(model_gaweeks = map(train, \(df) lm(bwt ~ gaweeks+mrace+smoken, data=df)),
+         model_length = map(train, \(df) lm(bwt ~ blength+gaweeks, data=df)),
+         model_headlengthsex = map(train, \(df) lm(bwt ~ bhead+blength+babysex
+                       +bhead*blength+blength*babysex+babysex*bhead+bhead*blength*babysex,
+                       data=df))
+           )|>
+  mutate(
+    rmse_gaweeks = map2_dbl(model_gaweeks, test, \(mod, df) rmse(model = mod, data = df)),
+    rmse_length = map2_dbl(model_length, test, \(mod, df) rmse(model = mod, data = df)),
+    rmse_headlengthsex = map2_dbl(model_headlengthsex, test, \(mod, df) rmse(model = mod,      data = df))
+  )
+```
+
+```{r}
+cv_df |> 
+  select(starts_with("rmse")) |> 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") |> 
+  mutate(model = fct_inorder(model)) |> 
+  ggplot(aes(x = model, y = rmse)) + geom_violin()
+```
+
+Based on the rootmean square models, the headlengthsex model has the smallest rmse thus we conclude that to be the best model of the three models. 
