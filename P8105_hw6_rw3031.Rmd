@@ -142,7 +142,7 @@ homocide|>
     resolve = case_when(
       disposition == "Open/No arrest" ~ 0,
       TRUE ~ 1))|>
-  summarise(model = list(glm(resolve~victim_age+victim_race+victim_sex)))|>
+  summarise(model = list(glm(resolve~victim_age+victim_race+victim_sex, family = "binomial")))|>
   mutate(results = map(model, ~ broom::tidy(.x, conf.int = TRUE, exponentiate = TRUE)))|>
   unnest(results)|>
   select(term, estimate, conf.low, conf.high)|>
@@ -159,14 +159,15 @@ homocide|>
   group_by(city_state)|>
   nest()|>
   mutate(model = map(.x=data, ~glm(resolve~victim_age+victim_race+victim_sex, 
-                                         data = .x)),
+                                         data = .x, family="binomial")),
          results = map(model, ~ broom::tidy(.x, conf.int = TRUE, exponentiate = TRUE)))|>
   unnest(results)|>
   select(term, estimate, conf.low, conf.high)|>
   filter(term == "victim_sexMale")|>
   select(-term)
 
-homocide_glm
+homocide_glm|>
+  knitr::kable()
 ```
 
 ## plot for the or estimate and confidence interval on homocide for each city
